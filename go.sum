@@ -1,0 +1,4 @@
+github.com/ekzyis/snappy v0.10.1-0.20260805211149-90e52e19d226 h1:Mxc/kayrWfBNvvtkMwk0na86AExXr/jGidPwumxoBHI=
+github.com/ekzyis/snappy v0.10.1-0.20260805211149-90e52e19d226/go.mod h1:/dpMgJfinP+kfNM/LYv2upd1Pd0n7ejR1CHeEv3IE4k=
+gopkg.in/guregu/null.v4 v4.0.0 h1:1Wm3S1WEA2I26Kq+6vcW+w0gcDo44YKYD7YIEJNHDjg=
+gopkg.in/guregu/null.v4 v4.0.0/go.mod h1:YoQhUrADuG3i9WqesrCmpNRwm1ypAgSHYqoOcTu/JrI=

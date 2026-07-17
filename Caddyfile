@@ -1,0 +1,14 @@
+{
+	auto_https off
+	admin off
+}
+
+# Serve static/ on localhost:8080 with an SPA fallback: unknown paths like
+# /<territory> (and a refresh on them) serve index.html instead of 404, while
+# real files like /data/<t>-agg.json are still served directly.
+:8080 {
+	root * static
+	encode gzip
+	try_files {path} /index.html
+	file_server
+}

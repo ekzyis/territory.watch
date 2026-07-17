@@ -1,0 +1,8 @@
+# go binary
+tw
+
+# only keep gzip archive
+*-feed.ndjson
+*-agg.json
+!data.tar.gz
+

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>territory.watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  /* Reserve the scrollbar's space in every state so the layout width doesn't
+     change (no shift) when the dashboard adds a vertical scrollbar. */
+  html{scrollbar-gutter:stable}
+  body{background:#14100c;color:#ece4d8;font-family:'Space Grotesk',system-ui,sans-serif;font-feature-settings:'tnum' 1}
+  a{color:#f7931a;text-decoration:none}
+  a:hover{color:#ffb44d}
+  ::selection{background:#f7931a;color:#14100c}
+  input{font-family:inherit}
+  @keyframes flicker{0%,100%{opacity:.72;transform:translate(-50%,-50%) scale(1)}25%{opacity:.62;transform:translate(-50%,-50%) scale(.985)}50%{opacity:.82;transform:translate(-50%,-50%) scale(1.02)}70%{opacity:.66;transform:translate(-50%,-50%) scale(.99)}}
+  @keyframes twinkle{0%,100%{opacity:.5}50%{opacity:.9}}
+  @keyframes signFlicker{
+    0%{opacity:.92;text-shadow:0 0 18px rgba(247,147,26,.5),0 2px 12px rgba(0,0,0,.9)}
+    22%{opacity:1;text-shadow:0 0 24px rgba(247,147,26,.62),0 0 44px rgba(247,147,26,.28),0 2px 12px rgba(0,0,0,.9)}
+    38%{opacity:.86;text-shadow:0 0 14px rgba(247,147,26,.44),0 2px 12px rgba(0,0,0,.9)}
+    55%{opacity:.97;text-shadow:0 0 22px rgba(247,147,26,.58),0 2px 12px rgba(0,0,0,.9)}
+    72%{opacity:.83;text-shadow:0 0 13px rgba(247,147,26,.42),0 2px 12px rgba(0,0,0,.9)}
+    100%{opacity:.92;text-shadow:0 0 18px rgba(247,147,26,.5),0 2px 12px rgba(0,0,0,.9)}
+  }
+  @keyframes starsOut{from{opacity:1}to{opacity:0}}
+  @keyframes sunRise{from{opacity:0;transform:translateY(64%)}to{opacity:1;transform:translateY(16%)}}
+  @keyframes dawnIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
+  @keyframes rollUp{from{opacity:0;transform:translateY(90px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes heroOut{from{opacity:1;max-height:130vh;transform:translateY(0) scale(1)}to{opacity:0;max-height:0;transform:translateY(-24px) scale(.985)}}
+  /* Reverse choreography (distinct names so they restart even after the forward
+     animation of the same element has already finished). */
+  @keyframes rollDown{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(90px)}}
+  @keyframes slideUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-100%)}}
+  @keyframes sunSet{from{opacity:1;transform:translateY(16%)}to{opacity:0;transform:translateY(64%)}}
+  @keyframes starsIn{from{opacity:0}to{opacity:1}}
+  @keyframes dawnOut{from{opacity:1}to{opacity:0}}
+  @keyframes heroIn{from{opacity:0;max-height:0;transform:translateY(-24px) scale(.985)}to{opacity:1;max-height:130vh;transform:translateY(0) scale(1)}}
+
+  /* Search state (default): night sky, hero visible, dashboard + top bar out. */
+  #star-layer{opacity:1}
+  #dawn{opacity:0}
+  #sun{opacity:0;transform:translateY(64%)}
+  #topbar{display:none}
+  #dash{display:none}
+
+  /* Territory state (final): the values a direct ?t= load lands on with no
+     animation. The .animate variant below plays the sunrise into these same
+     end states, and is added only when arriving from the search. */
+  body.territory #star-layer{opacity:0}
+  body.territory #dawn{opacity:1}
+  body.territory #sun{opacity:1;transform:translateY(16%)}
+  body.territory #topbar{display:block}
+  body.territory #dash{display:block}
+  body.territory #hero{display:none}
+
+  body.territory.animate #star-layer{animation:starsOut 1.4s ease both}
+  body.territory.animate #dawn{animation:dawnIn 2.5s ease both}
+  body.territory.animate #sun{animation:sunRise 2.5s cubic-bezier(.16,.8,.3,1) both}
+  body.territory.animate #hero{display:block;overflow:hidden;animation:heroOut .8s cubic-bezier(.6,0,.25,1) both}
+  body.territory.animate #topbar{display:block;animation:slideDown .7s cubic-bezier(.6,0,.25,1) 1.4s both}
+  body.territory.animate #dash{display:block;animation:rollUp .9s cubic-bezier(.7,0,.2,1) 1.4s both}
+
+  /* Returning to the landing (brand click): the same choreography in reverse —
+     dashboard rolls down out and top bar slides up first, then the sun sets and
+     the stars + hero return. Reuses the forward keyframes via reverse. */
+  body.territory.leaving #dash{display:block;animation:rollDown .7s cubic-bezier(.6,0,.4,1) both}
+  body.territory.leaving #topbar{display:block;animation:slideUp .6s cubic-bezier(.6,0,.4,1) both}
+  body.territory.leaving #sun{animation:sunSet 1.8s cubic-bezier(.16,.8,.3,1) .3s both}
+  body.territory.leaving #star-layer{animation:starsIn 1.4s ease .3s both}
+  body.territory.leaving #dawn{animation:dawnOut 1.8s ease .3s both}
+  body.territory.leaving #hero{display:block;animation:heroIn .8s cubic-bezier(.6,0,.25,1) .5s both}
+
+  /* On mobile the card goes full-bleed (full width, square corners, no side or
+     bottom gap) but keeps a top margin equal to the fixed top bar's height so
+     it sits just below the bar rather than sliding underneath it. !important is
+     needed because #dash sets `margin`/`border-radius` inline (a shorthand
+     outranks a normal rule). */
+  @media (max-width:640px){
+    #dash{margin:60px 0 0!important;border-radius:0!important}
+    /* Portrait: 50vw is too small a disc, so the sun rises but stays behind the
+       ridges. Widen it (vw of the narrow axis) so it clears the ridgeline. */
+    #sun{width:min(92vw,520px)!important;height:min(92vw,520px)!important;margin-left:calc(min(92vw,520px) / -2)!important}
+  }
+</style>
+</head>
+<body>
+
+<noscript>
+  <style>
+    /* The dashboard is built by JS, so the search + panels can't work here.
+       Hide them and show a styled notice over the (CSS-only) night sky. */
+    #topbar,#hero,#dash{display:none!important}
+    .ns{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px}
+    .ns-card{width:min(460px,92vw);text-align:center;background:rgba(14,10,7,.8);backdrop-filter:blur(6px);border:1.5px solid rgba(247,147,26,.5);border-radius:14px;padding:36px 30px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  </style>
+  <div class="ns">
+    <div class="ns-card">
+      <div style="font-weight:700;font-size:clamp(26px,5vw,38px);letter-spacing:-.02em;color:#f0b968;text-shadow:0 0 22px rgba(247,147,26,.5),0 2px 12px rgba(0,0,0,.9)">territory.watch</div>
+      <p style="margin:20px 0 0;color:#ece4d8;font-size:16px;line-height:1.65">This tool charts the revenue a <span style="color:#f7931a">Stacker&nbsp;News</span> territory earns its founder — and it needs JavaScript to draw the charts.</p>
+      <p style="margin:14px 0 0;color:#b9a88f;font-size:13px;line-height:1.6">Enable JavaScript and reload to illuminate a territory.</p>
+    </div>
+  </div>
+</noscript>
+
+<div id="bg" style="position:fixed;top:0;bottom:0;left:0;width:100vw;z-index:0;overflow:hidden;filter:url(#heatHaze)">
+  <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+    <filter id="heatHaze" x="-6%" y="-6%" width="112%" height="112%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.028" numOctaves="2" seed="7" result="noise">
+        <animate attributeName="baseFrequency" dur="11s" values="0.011 0.026;0.013 0.034;0.010 0.024;0.011 0.026" repeatCount="indefinite"></animate>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="11" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+    </filter>
+  </svg>
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,#0a0c12 0%,#10131d 55%,#171a26 100%)"></div>
+  <div id="star-layer" style="position:absolute;inset:0">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(1.4px 1.4px at 12% 18%,#cdd6ea 50%,transparent),radial-gradient(1.2px 1.2px at 28% 32%,#aab4cc 50%,transparent),radial-gradient(1.6px 1.6px at 44% 12%,#e3e9f6 50%,transparent),radial-gradient(1.1px 1.1px at 62% 24%,#9aa6c0 50%,transparent),radial-gradient(1.5px 1.5px at 78% 14%,#cdd6ea 50%,transparent),radial-gradient(1.2px 1.2px at 88% 30%,#b7c1d8 50%,transparent),radial-gradient(1.1px 1.1px at 8% 40%,#9aa6c0 50%,transparent),radial-gradient(1.3px 1.3px at 34% 8%,#cdd6ea 50%,transparent),radial-gradient(1.2px 1.2px at 54% 34%,#aab4cc 50%,transparent),radial-gradient(1.5px 1.5px at 70% 6%,#e3e9f6 50%,transparent),radial-gradient(1.1px 1.1px at 94% 20%,#9aa6c0 50%,transparent),radial-gradient(1.3px 1.3px at 20% 6%,#b7c1d8 50%,transparent);opacity:.7;animation:twinkle 6s ease-in-out infinite"></div>
+    <div id="star-glow" style="position:absolute;left:80%;top:16%;width:min(110vw,1300px);height:min(110vw,1300px);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,244,220,.55) 0%,rgba(255,224,165,.22) 5%,rgba(250,180,90,.12) 16%,rgba(247,147,26,.07) 34%,rgba(230,120,40,.03) 52%,rgba(0,0,0,0) 68%);animation:flicker 5.5s ease-in-out infinite"></div>
+    <div id="star-dot" style="position:absolute;left:80%;top:16%;width:5px;height:5px;transform:translate(-50%,-50%);border-radius:50%;background:#fff8ea;box-shadow:0 0 8px 2px rgba(255,240,210,.9),0 0 26px 8px rgba(255,210,140,.4)"></div>
+  </div>
+  <div id="dawn" style="position:absolute;inset:0;background:linear-gradient(to top,rgba(255,150,55,.6) 0%,rgba(232,110,58,.42) 9%,rgba(150,80,95,.24) 24%,rgba(52,52,90,.13) 42%,transparent 62%)"></div>
+  <div id="sun" style="position:absolute;left:50%;bottom:-6%;width:min(50vw,520px);height:min(50vw,520px);margin-left:calc(min(50vw,520px) / -2)">
+    <div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#ffe6a8 0%,#ffcd6a 30%,#f7a63a 52%,#ef7f22 64%,rgba(230,105,28,.3) 76%,transparent 86%)"></div>
+  </div>
+  <div id="ridge-back" style="position:absolute;left:-5%;right:-5%;bottom:0;height:46%;background:linear-gradient(to bottom,#12141d,#0a0b12);clip-path:polygon(0% 60%,14% 52%,28% 66%,42% 48%,57% 62%,71% 50%,85% 64%,100% 54%,100% 100%,0% 100%);opacity:1"></div>
+  <div id="ridge-mid" style="position:absolute;left:-5%;right:-5%;bottom:0;height:36%;background:linear-gradient(to bottom,#0b0d14,#050609);clip-path:polygon(0% 52%,11% 44%,22% 58%,33% 46%,44% 56%,55% 42%,66% 54%,77% 44%,88% 56%,100% 46%,100% 100%,0% 100%)"></div>
+  <div id="ridge-front" style="position:absolute;left:-5%;right:-5%;bottom:0;height:26%;background:#040508;clip-path:polygon(0% 40%,8% 30%,15% 46%,23% 28%,31% 44%,38% 32%,46% 48%,54% 30%,62% 46%,69% 34%,77% 48%,85% 32%,92% 46%,100% 36%,100% 100%,0% 100%)"></div>
+</div>
+
+<div id="topbar" style="position:fixed;top:0;left:0;right:0;z-index:30;background:rgba(16,12,8,.9);backdrop-filter:blur(10px);border-bottom:1px solid rgba(247,147,26,.28)">
+  <div style="max-width:1040px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:16px">
+    <button id="brand" style="background:none;border:none;color:#f7931a;font-family:inherit;font-weight:800;font-size:15px;letter-spacing:.02em;cursor:pointer;padding:0;white-space:nowrap">territory.watch</button>
+    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(247,147,26,.3);border-radius:7px;padding:8px 12px;max-width:420px">
+      <span style="color:#f7931a;font-weight:800">~</span>
+      <input id="top-search" placeholder="illuminate a territory" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;min-width:0;background:none;border:none;outline:none;color:#ece4d8;font-size:14px"/>
+      <button id="top-go" aria-label="search territory" style="background:none;border:none;color:#9a8f7f;cursor:pointer;display:flex;align-items:center;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+    </div>
+  </div>
+</div>
+
+<div style="position:relative;z-index:10">
+  <div id="hero" style="overflow:hidden;transform-origin:top center">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6vh 24px 12vh;text-align:center">
+    <div style="display:flex;align-items:center;gap:8px;margin:0 0 14px;font-weight:700;font-size:clamp(28px,5.5vw,44px);letter-spacing:-.02em;color:#f0b968;text-shadow:0 0 22px rgba(247,147,26,.5),0 2px 12px rgba(0,0,0,.9);animation:signFlicker 6s infinite">territory.watch</div>
+    <div style="height:30px"></div>
+    <div id="search-box" style="position:relative;width:min(440px,92vw);display:flex;align-items:center;gap:10px;background:rgba(14,10,7,.74);border:1.5px solid rgba(247,147,26,.55);border-radius:11px;padding:12px 15px;box-shadow:0 20px 60px rgba(0,0,0,.55);backdrop-filter:blur(6px);transition:border-color .2s ease">
+      <span style="color:#f7931a;font-size:34px;line-height:1;font-weight:700;flex:none">~</span>
+      <input id="search" placeholder="illuminate a territory" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;min-width:0;background:none;border:none;outline:none;color:#ece4d8;caret-color:#f7931a;font-size:19px;font-weight:500;letter-spacing:.01em"/>
+      <button id="go" aria-label="search territory" style="background:#f7931a;color:#14100c;border:none;border-radius:7px;padding:10px 14px;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14100c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+      <div id="notfound" style="position:absolute;left:0;right:0;top:calc(100% + 26px);text-align:center;pointer-events:none;z-index:5;opacity:0;transition:opacity .2s ease"><span style="display:inline-block;background:rgba(14,10,7,.82);backdrop-filter:blur(4px);color:#ffc0b2;font-size:13px;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,150,120,.4)"></span></div>
+    </div>
+    <div id="chips" style="margin-top:26px;max-width:min(440px,92vw);display:flex;flex-wrap:wrap;gap:9px;justify-content:center;align-items:center;background:rgba(14,10,7,.6);backdrop-filter:blur(4px);border-radius:24px;padding:8px 14px;transition:opacity .2s ease">
+      <span style="color:#e6d6bf;font-size:13px;align-self:center;margin-right:2px">try:</span>
+    </div>
+    </div>
+  </div>
+
+  <div id="dash" style="max-width:1040px;margin:80px auto 80px;padding:44px 26px 30px;background:#0b0805;border-radius:18px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;border-bottom:1px solid rgba(247,147,26,.22);padding-bottom:26px;margin-bottom:30px">
+      <div>
+        <div style="display:flex;align-items:baseline;gap:4px">
+          <span style="color:#f7931a;font-size:clamp(30px,5vw,46px);line-height:1;font-weight:700">~</span>
+          <h2 id="terr-name" style="margin:0;font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-.01em"></h2>
+        </div>
+        <div id="meta-line" style="color:#b9a88f;font-size:13px;margin-top:8px"></div>
+        <div id="updated-line" style="display:none;align-items:center;gap:7px;color:#8a7f70;font-size:12px;margin-top:8px"></div>
+      </div>
+      <div style="text-align:right">
+        <div id="rev-range" style="color:#9a8f7f;font-size:11px;letter-spacing:.18em;text-transform:uppercase">Revenue</div>
+        <div id="rev-total" style="font-size:clamp(30px,5vw,46px);font-weight:800;color:#f7931a;line-height:1.05"></div>
+        <div style="color:#f7931a;font-size:12px">sats</div>
+      </div>
+    </div>
+
+    <div id="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:38px"></div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px">
+      <div id="trend-label" style="font-size:13px;color:#c9b79f;letter-spacing:.04em">TREND</div>
+      <div id="range-btns" style="display:flex;flex-wrap:wrap;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(247,147,26,.16);border-radius:8px;padding:4px"></div>
+    </div>
+
+    <div style="font-size:11px;color:#9a8f7f;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px">Revenue · sats</div>
+    <div id="rev-box" style="background:rgba(255,255,255,.025);border:1px solid rgba(247,147,26,.16);border-radius:11px;padding:22px 18px 14px;margin-bottom:26px;position:relative"></div>
+
+    <div style="font-size:11px;color:#9a8f7f;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px">Zaps · sats</div>
+    <div id="zap-box" style="background:rgba(255,255,255,.025);border:1px solid rgba(247,147,26,.16);border-radius:11px;padding:22px 18px 14px;margin-bottom:26px;position:relative"></div>
+
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:8px">
+      <span style="font-size:11px;color:#9a8f7f;letter-spacing:.16em;text-transform:uppercase">Activity · count</span>
+      <div id="legend" style="display:flex;gap:16px;flex-wrap:wrap"></div>
+    </div>
+    <div id="act-box" style="background:rgba(255,255,255,.025);border:1px solid rgba(247,147,26,.16);border-radius:11px;padding:22px 18px 14px;margin-bottom:44px;position:relative"></div>
+
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="breakdown-label" style="font-size:13px;color:#c9b79f;letter-spacing:.04em">BREAKDOWN</span>
+    </div>
+    <div style="overflow-x:auto;border:1px solid rgba(247,147,26,.16);border-radius:11px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px">
+        <thead>
+          <tr style="background:rgba(247,147,26,.08)">
+            <th id="col-label" style="text-align:left;padding:12px 16px;color:#c9b79f;font-weight:700;letter-spacing:.04em">Period</th>
+            <th style="text-align:left;padding:12px 16px;color:#c9b79f;font-weight:700">Revenue (sats)</th>
+            <th style="text-align:left;padding:12px 16px;color:#c9b79f;font-weight:700">Posts</th>
+            <th style="text-align:left;padding:12px 16px;color:#c9b79f;font-weight:700">Comments</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <p style="margin:44px 0 0;font-size:12px;color:#7d7264;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
+      <a href="https://claude.ai" target="_blank" rel="noopener" style="color:#7d7264;text-decoration:none;display:inline-flex;align-items:center;gap:5px">made with
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f7931a" aria-hidden="true"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></svg>
+      </a>
+      <span aria-hidden="true">·</span>
+      <a id="commit" href="#" target="_blank" rel="noopener" style="color:#7d7264;text-decoration:none"></a>
+    </p>
+  </div>
+</div>
+
+<script>
+// Known territories: powers the search-box chips and a case-insensitive
+// not-found check (a rendered data/<name>-agg.json still loads even if unlisted,
+// via the fetch 404 fallback).
+// GENERATED by `make build` — do not edit by hand.
+const TERRITORIES = [
+  "hyperlinks",
+  "Geyser_community",
+  "mempool",
+  "Coinjoins",
+  "jobs",
+  "math",
+  "Christianity",
+  "videos",
+  "bitcoinplusplus",
+  "events",
+  "food_and_drinks",
+  "aliens_and_UFOs",
+  "tutorials",
+  "Education",
+  "podcasts",
+  "DIY",
+  "history",
+  "art",
+  "movies",
+  "Travel",
+  "lol",
+  "AGORA",
+  "Construction_and_Engineering",
+  "openagents",
+  "ideasfromtheedge",
+  "gaming",
+  "bitcoin_Mining",
+  "the_stacker_muse",
+  "Memes",
+  "bitdevs",
+  "Design",
+  "devs",
+  "HealthAndFitness",
+  "Animal_World",
+  "science",
+  "privacy",
+  "mostly_harmless",
+  "AI",
+  "charts_and_maps",
+  "Photography",
+  "AskSN",
+  "Stacker_Stocks",
+  "Music",
+  "news",
+  "bitcoin_beginners",
+  "Politics_And_Law",
+  "AMA",
+  "lightning",
+  "nostr",
+  "BooksAndArticles",
+  "econ",
+  "Stacker_Sports",
+  "bitcoin",
+  "tech",
+  "meta",
+  "relationships",
+  "dotnet",
+  "japan",
+  "security"
+];
+
+// ---- randomized sky (one Math.random draw, like the original design) --------
+function makeSky(){
+  var R=Math.random;
+  function ridge(n,a,b){var p=[];for(var i=0;i<=n;i++){var x=(i/n)*100,y=a+R()*(b-a);p.push(x.toFixed(1)+'% '+y.toFixed(0)+'%');}return 'polygon('+p.join(',')+',100% 100%,0% 100%)';}
+  var y=(10+R()*22).toFixed(1),x=(R()<.5?8+R()*20:72+R()*20).toFixed(1);
+  return {back:ridge(7,44,80),mid:ridge(9,34,66),front:ridge(13,6,62),starX:x+'%',starY:y+'%'};
+}
+function applySky(s){
+  var q=function(id){return document.getElementById(id);};
+  q('ridge-back').style.clipPath=s.back;q('ridge-mid').style.clipPath=s.mid;q('ridge-front').style.clipPath=s.front;
+  ['star-glow','star-dot'].forEach(function(id){var e=q(id);e.style.left=s.starX;e.style.top=s.starY;});
+}
+applySky(makeSky());
+
+// ---- dashboard rendering (data-driven from the fetched territory JSON) ------
+let DATA={},META={},RANGE='year',tbody=null;
+const RANGES=[
+  {id:'day',label:'Day',lab:'Hour'},{id:'week',label:'Week',lab:'Day'},{id:'month',label:'Month',lab:'Day'},
+  {id:'ytd',label:'YTD',lab:'Week'},{id:'year',label:'Year',lab:'Week'},{id:'forever',label:'All',lab:'Month'}
+];
+// Series drawn on each chart: [seriesKey, label, color, dash] ('0' = solid).
+// Revenue and zaps are each their own sats chart; posts and comments are counts
+// on the activity chart.
+const REV=[['revenue','Revenue','#f7931a','0']];
+const ZAP=[['zaps','Zaps','#f7931a','0']];
+const ACT=[['posts','Posts','#3f7bd0','0'],['comments','Comments','#c85f86','0']];
+
+const rc=id=>RANGES.find(r=>r.id===id)||RANGES[4];
+const comma=n=>Math.round(n).toLocaleString('en-US');
+const compact=n=>n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':comma(n);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const X=(i,N)=>N<=1?372:+(40+i*(664/(N-1))).toFixed(1);
+const Yf=max=>v=>+(210-(v/max)*180).toFixed(1);
+const gridFor=max=>[0,1,2,3,4].map(k=>{const v=max*k/4,y=Yf(max)(v);return{y,topPx:(22+y/250*280)+'px',label:compact(v)};});
+const gridLinesHTML=grid=>grid.map(g=>'<line x1="40" x2="704" y1="'+g.y+'" y2="'+g.y+'" stroke="rgba(247,147,26,.1)" stroke-width="1"></line>').join('');
+const gridLabelsHTML=grid=>grid.map(g=>'<div style="position:absolute;left:18px;top:'+g.topPx+';transform:translateY(-50%);width:calc((100% - 36px)*0.0556 - 8px);text-align:right;font-size:11px;color:#8a7f70;pointer-events:none;font-variant-numeric:tabular-nums">'+g.label+'</div>').join('');
+function xlabelsHTML(R){
+  const N=R.n,step=Math.max(1,Math.ceil(N/7));let out='';
+  R.labels.forEach((label,i)=>{if(i%step!==0)return;const left='calc(18px + (100% - 36px)*'+(X(i,N)/720).toFixed(4)+')';out+='<div style="position:absolute;top:293px;left:'+left+';transform:translate(-50%,-50%);font-size:11px;color:#8a7f70;pointer-events:none;white-space:nowrap">'+esc(label)+'</div>';});
+  return out;
+}
+const circleHTML=(x,y,r,color)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="#14100c" stroke="'+color+'" stroke-width="1.5"></circle>';
+
+// Draw one line chart from a series spec ([key,label,color,dash]). The y-axis
+// fits every series with 14% headroom. If areaKey is given, that series also
+// gets a filled gradient area (revenue). A hidden guide line and tip are
+// appended for wireHover to drive.
+function chartHTML(R,spec,areaKey){
+  const N=R.n,arrs=spec.map(s=>R.series[s[0]]);
+  const max=Math.max.apply(null,arrs.flat().concat([1]))*1.14,Y=Yf(max),grid=gridFor(max);
+  const path=arr=>'M '+arr.map((v,i)=>X(i,N)+','+Y(v)).join(' L ');
+  const areaPts=areaKey?R.series[areaKey].map((v,i)=>X(i,N)+','+Y(v)).join(' L '):'';
+  const area=areaKey?'<path d="M '+X(0,N)+',210 L '+areaPts+' L '+X(N-1,N)+',210 Z" fill="url(#grad-'+areaKey+')"></path>':'';
+  const lines=spec.map(s=>'<path d="'+path(R.series[s[0]])+'" fill="none" stroke="'+s[2]+'" stroke-width="1.5" stroke-dasharray="'+s[3]+'" stroke-linejoin="round"></path>').join('');
+  const circles=spec.map(s=>R.series[s[0]].map((v,i)=>circleHTML(X(i,N),Y(v),'2',s[2])).join('')).join('');
+  const defs=areaKey?'<defs><linearGradient id="grad-'+areaKey+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(247,147,26,.34)"></stop><stop offset="100%" stop-color="rgba(247,147,26,0)"></stop></linearGradient></defs>':'';
+  const svg='<svg viewBox="0 0 720 250" preserveAspectRatio="none" style="width:100%;height:280px;display:block;overflow:visible">'
+    +gridLinesHTML(grid)+area+lines+circles+GUIDE+defs+'</svg>';
+  return svg+gridLabelsHTML(grid)+xlabelsHTML(R)+'<div class="tip" style="display:none"></div>';
+}
+// The hover readout is pinned to the top-right corner (clear of the left-side
+// y-axis labels); GUIDE is a dashed vertical line dropped from the hovered point
+// down to the x-axis, inserted hidden into each chart's svg.
+const TIP_CSS='position:absolute;top:14px;right:14px;background:#14100c;border:1px solid #f7931a;border-radius:6px;padding:8px 11px;font-size:12px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:5;display:block';
+const GUIDE='<line class="guide" stroke="rgba(236,228,216,.45)" stroke-width="1" stroke-dasharray="3 3" style="display:none"></line>';
+// Hover anywhere over a chart: find the bucket nearest the mouse x, draw the
+// guide line down that column across the full plot height (top gridline at y=30
+// to the x-axis at y=210), and show a fixed corner readout — the time label on
+// its own row, then one "label: value" row per series. `specs` is
+// [{label,color,arr,unit}].
+function wireHover(box,R,specs){
+  const tip=box.querySelector('.tip'),svg=box.querySelector('svg'),guide=svg.querySelector('.guide'),N=R.n;
+  box.addEventListener('mousemove',e=>{
+    const rect=svg.getBoundingClientRect();if(rect.width<=0)return;
+    let i=N<=1?0:Math.round(((e.clientX-rect.left)/rect.width*720-40)/(664/(N-1)));
+    i=Math.max(0,Math.min(N-1,i));
+    const cx=X(i,N);
+    guide.setAttribute('x1',cx);guide.setAttribute('x2',cx);
+    guide.setAttribute('y1',30);guide.setAttribute('y2',210);guide.style.display='';
+    tip.style.cssText=TIP_CSS;
+    tip.innerHTML='<div style="color:#9a8f7f;margin-bottom:3px">'+esc(R.labels[i])+'</div>'
+      +specs.map(s=>'<div style="color:'+s.color+';font-weight:700">'+esc(s.label)+': '+comma(s.arr[i])
+        +(s.unit?' <span style="color:#f7931a;font-weight:600">'+s.unit+'</span>':'')+'</div>').join('');
+  });
+  box.addEventListener('mouseleave',()=>{tip.style.display='none';guide.style.display='none';});
+}
+function cardsHTML(R,cfg){
+  const T=R.totals,sub=cfg.label.toLowerCase();
+  const cards=[['Posts',comma(T.posts),sub,'#ece4d8'],['Comments',comma(T.comments),sub,'#ece4d8'],['Zaps',compact(T.zaps),'sats · '+sub,'#f7931a'],['Stackers',comma(META.stackers),'active','#ece4d8']];
+  return cards.map(c=>'<div style="background:#14100b;border:1px solid rgba(247,147,26,.22);border-radius:9px;padding:16px 18px"><div style="color:#9a8f7f;font-size:11px;letter-spacing:.16em;text-transform:uppercase">'+c[0]+'</div><div style="font-size:24px;font-weight:800;margin-top:8px;color:'+c[3]+'">'+c[1]+'</div><div style="color:#7d7264;font-size:11px;margin-top:3px">'+c[2]+'</div></div>').join('');
+}
+function btnsHTML(){
+  return RANGES.map(r=>{const active=r.id===RANGE;const style='font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border:none;border-radius:6px;padding:7px 12px;'+(active?'background:#f7931a;color:#14100c':'background:transparent;color:#c9b79f');return '<button data-range="'+r.id+'" style="'+style+'">'+r.label+'</button>';}).join('');
+}
+const legendHTML=spec=>spec.map(a=>'<span style="display:flex;align-items:center;gap:7px;font-size:12px;color:#c9b79f"><span style="width:16px;height:3px;border-radius:2px;background:'+a[2]+'"></span>'+a[1]+'</span>').join('');
+function cellHTML(v,isRev){
+  const base=isRev?'padding:11px 16px;text-align:left;color:#f7931a;font-weight:600;white-space:nowrap':'padding:11px 16px;text-align:left;white-space:nowrap';
+  return '<td style="'+base+'">'+comma(v)+'<span class="diff" style="display:inline-block;min-width:62px;text-align:left;margin-left:10px;font-weight:700;font-size:11px;color:#9a8f7f"></span></td>';
+}
+function tableHTML(R){
+  const N=R.n,S=R.series;let rows='';
+  for(let i=N-1;i>=0;i--){rows+='<tr data-i="'+i+'" style="border-top:1px solid rgba(247,147,26,.09);transition:background .12s ease;cursor:default;background:transparent"><td style="padding:11px 16px;color:#b9a88f;white-space:nowrap">'+esc(R.labels[i])+'</td>'+cellHTML(S.revenue[i],true)+cellHTML(S.posts[i],false)+cellHTML(S.comments[i],false)+'</tr>';}
+  return rows;
+}
+function updateDiffs(hr){
+  const S=DATA[RANGE].series,arrs=[S.revenue,S.posts,S.comments];
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const i=+tr.getAttribute('data-i');
+    tr.style.background=(hr===i)?'rgba(247,147,26,.13)':'transparent';
+    const cells=tr.querySelectorAll('td');
+    for(let c=0;c<3;c++){const span=cells[c+1].querySelector('.diff'),arr=arrs[c],v=arr[i];
+      if(hr!=null&&hr!==i){const df=v-arr[hr];span.style.color=df>0?'#79c07f':df<0?'#e0876a':'#9a8f7f';span.textContent=(df>0?'+':df<0?'−':'±')+comma(Math.abs(df));}
+      else{span.textContent='';span.style.color='#9a8f7f';}}
+  });
+}
+function metaLine(){
+  const f=META.founded,u=META.founder;let lead='';
+  // Founder nym links to their Stacker News profile (stacker.news/<nym>).
+  const link=u?'<a href="https://stacker.news/'+encodeURIComponent(u)+'" target="_blank" rel="noopener noreferrer">@'+esc(u)+'</a>':'';
+  if(f&&u)lead='founded '+esc(f)+' by '+link;
+  else if(f)lead='founded '+esc(f);
+  else if(u)lead='by '+link;
+  const tail=comma(META.stackers)+' stackers';return lead?lead+' · '+tail:tail;
+}
+const setText=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+// Human "N days ago" from the fetchedAt string the renderer emits.
+function relTime(s){
+  const d=new Date(s);if(isNaN(d))return s;
+  const secs=(Date.now()-d.getTime())/1000,mins=secs/60,hrs=mins/60,days=hrs/24;
+  if(secs<90)return'just now';
+  if(mins<60)return Math.round(mins)+' min ago';
+  if(hrs<24)return Math.round(hrs)+(Math.round(hrs)===1?' hour ago':' hours ago');
+  if(days<30)return Math.round(days)+(Math.round(days)===1?' day ago':' days ago');
+  const mo=days/30;if(mo<12)return Math.round(mo)+(Math.round(mo)===1?' month ago':' months ago');
+  const yr=Math.round(days/365);return yr+(yr===1?' year ago':' years ago');
+}
+// Show "updated N days ago" in the header, with a freshness dot (green→amber→red
+// as it ages) and the exact timestamp on hover.
+function setUpdated(s){
+  const el=document.getElementById('updated-line');if(!el)return;
+  if(!s){el.style.display='none';return;}
+  const d=new Date(s),days=isNaN(d)?null:(Date.now()-d.getTime())/86400000;
+  const color=days==null?'#8a7f70':days<2?'#79c07f':days<14?'#e0a56a':'#e0876a';
+  el.style.display='flex';el.title='data as of '+s;
+  el.innerHTML='<span style="width:7px;height:7px;border-radius:50%;flex:none;background:'+color+';box-shadow:0 0 6px '+color+'"></span><span>updated '+esc(relTime(s))+'</span>';
+}
+// Footer: "commit <commit>" linking to that commit on GitHub. Falls back to
+// 000000 (linked to the repo) when the render couldn't determine the commit.
+function setCommit(c){
+  const el=document.getElementById('commit');if(!el)return;
+  c=c||'000000';
+  el.textContent='commit '+c;
+  el.href='https://github.com/ekzyis/territory.watch'+(c==='000000'?'':'/commit/'+c);
+}
+function renderAll(){
+  const R=DATA[RANGE],cfg=rc(RANGE);
+  setText('terr-name',META.name);
+  document.getElementById('meta-line').innerHTML=metaLine();
+  setText('rev-total',comma(R.totals.revenue));
+  setText('rev-range','Revenue · '+cfg.label);
+  setText('trend-label','TREND · '+cfg.label);
+  setText('breakdown-label','BREAKDOWN · '+cfg.label);
+  setText('col-label',cfg.lab);
+  document.getElementById('cards').innerHTML=cardsHTML(R,cfg);
+  const btns=document.getElementById('range-btns');btns.innerHTML=btnsHTML();
+  btns.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{RANGE=b.getAttribute('data-range');renderAll();}));
+  document.getElementById('legend').innerHTML=legendHTML(ACT);
+  const rb=document.getElementById('rev-box');rb.innerHTML=chartHTML(R,REV,'revenue');
+  wireHover(rb,R,REV.map(s=>({label:s[1],color:s[2],arr:R.series[s[0]],unit:'sats'})));
+  const zb=document.getElementById('zap-box');zb.innerHTML=chartHTML(R,ZAP,'zaps');
+  wireHover(zb,R,ZAP.map(s=>({label:s[1],color:s[2],arr:R.series[s[0]],unit:'sats'})));
+  const ab=document.getElementById('act-box');ab.innerHTML=chartHTML(R,ACT);
+  wireHover(ab,R,ACT.map(s=>({label:s[1],color:s[2],arr:R.series[s[0]],unit:''})));
+  tbody=document.getElementById('rows');tbody.innerHTML=tableHTML(R);
+  tbody.querySelectorAll('tr').forEach(tr=>{const i=+tr.getAttribute('data-i');tr.addEventListener('mouseenter',()=>updateDiffs(i));tr.addEventListener('mouseleave',()=>updateDiffs(null));});
+}
+
+// ---- search + state machine -------------------------------------------------
+const box=document.getElementById('search-box');
+const heroInput=document.getElementById('search');
+const nf=document.getElementById('notfound');
+const nfSpan=nf.querySelector('span');
+const chips=document.getElementById('chips');
+
+const clean=q=>String(q||'').trim().replace(/^~/,'').replace(/[^a-zA-Z0-9-_]/g,'');
+// The error and the suggestion chips are mutually exclusive: showing the error
+// hides the chips; the chip state is otherwise driven by updateSuggestions().
+function hideNotFound(){nf.style.opacity='0';box.style.borderColor='rgba(247,147,26,.55)';}
+function showNotFound(s){nfSpan.textContent='No territory named ~'+s+'.';nf.style.opacity='1';box.style.borderColor='rgba(255,150,120,.7)';chips.style.opacity='0';}
+
+let leaveTimer=null;
+function enterTerritory(name,animate){
+  clearTimeout(leaveTimer);
+  return fetch('/data/'+name.toLowerCase()+'-agg.json').then(r=>{if(!r.ok)throw new Error('404');return r.json();}).then(p=>{
+    DATA=p.data;META=p.meta;RANGE='year';
+    setUpdated(p.fetchedAt||'');
+    setCommit(p.commit||'');
+    renderAll();
+    // Swap leaving→animate in the same frame the data lands, so the reverse
+    // animation holds until the arrival replaces it — no flash of the settled
+    // page while the fetch is in flight.
+    document.body.classList.remove('leaving');
+    document.body.classList.toggle('animate',!!animate);
+    document.body.classList.add('territory');
+    document.title='~'+name+' · territory.watch';
+    document.querySelectorAll('#top-search,#search').forEach(el=>el.value=name);
+  }).catch(()=>{showNotFound(name);});
+}
+function reset(){
+  history.pushState({},'','/');
+  document.title='territory.watch';
+  if(!document.body.classList.contains('territory')){
+    document.body.classList.remove('animate','leaving');
+    heroInput.value='';hideNotFound();updateSuggestions();return;
+  }
+  // Play the arrival choreography in reverse, then land in the search state.
+  clearTimeout(leaveTimer);
+  document.body.classList.remove('animate');
+  document.body.classList.add('leaving');
+  // Empty the search box now so it fades back in blank, not showing the name.
+  heroInput.value='';hideNotFound();updateSuggestions();
+  leaveTimer=setTimeout(()=>{
+    document.body.classList.remove('territory','leaving');
+  },2200);
+}
+function resolve(q){
+  const s=clean(q);if(!s)return;
+  // Case-insensitive match against the known list for an instant not-found,
+  // no network round-trip. A hit gives us the canonical casing to fetch.
+  const match=TERRITORIES.find(t=>t.toLowerCase()===s.toLowerCase());
+  if(!match){showNotFound(s);return;}
+  // Mid-leave counts as "from search": the territory class lingers until the
+  // reverse animation ends, so also animate the arrival when interrupting it.
+  const fromSearch=!document.body.classList.contains('territory')||document.body.classList.contains('leaving');
+  history.pushState({t:match},'','/'+match);
+  enterTerritory(match,fromSearch);
+}
+
+document.getElementById('go').addEventListener('click',()=>resolve(heroInput.value));
+heroInput.addEventListener('keydown',e=>{if(e.key==='Enter')resolve(heroInput.value);});
+heroInput.addEventListener('input',()=>{hideNotFound();updateSuggestions();});
+document.getElementById('top-go').addEventListener('click',()=>resolve(document.getElementById('top-search').value));
+document.getElementById('top-search').addEventListener('keydown',e=>{if(e.key==='Enter')resolve(e.target.value);});
+document.getElementById('brand').addEventListener('click',reset);
+
+// Curated default suggestions (all have rendered data).
+const DEFAULTS=["bitcoin","tech","meta","econ"];
+const MAX_SUGGEST=6;
+// Fuzzy match: keep territories whose query letters appear in order. Prefix hits
+// rank first, then substrings, then looser subsequence matches (spread-penalized).
+function fuzzyRank(q){
+  q=q.toLowerCase();const out=[];
+  for(const t of TERRITORIES){const s=fuzzyScore(q,t.toLowerCase());if(s!=null)out.push([s,t]);}
+  return out.sort((a,b)=>a[0]-b[0]||a[1].length-b[1].length).map(x=>x[1]);
+}
+function fuzzyScore(q,t){
+  const i=t.indexOf(q);
+  if(i===0)return 0;              // prefix — best
+  if(i>0)return 10+i;             // substring
+  let qi=0,first=-1,gap=0;        // subsequence — penalize a late/spread match
+  for(let ti=0;ti<t.length&&qi<q.length;ti++){
+    if(t[ti]===q[qi]){if(first<0)first=ti;qi++;}
+    else if(qi>0)gap++;
+  }
+  return qi===q.length?100+first+gap:null;
+}
+// (Re)build the chip buttons, keeping the leading "try:" label span.
+function renderChips(names){
+  chips.querySelectorAll('button').forEach(b=>b.remove());
+  for(const name of names){
+    const b=document.createElement('button');
+    b.textContent='~'+name;
+    b.style.cssText='background:rgba(247,147,26,.16);border:1px solid rgba(247,147,26,.5);color:#ffce8f;border-radius:20px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer';
+    b.addEventListener('click',()=>resolve(name));
+    chips.appendChild(b);
+  }
+}
+// Fuzzy matches while typing, the default set when the box is empty.
+function updateSuggestions(){
+  const q=clean(heroInput.value);
+  const names=q?fuzzyRank(q).slice(0,MAX_SUGGEST):DEFAULTS;
+  renderChips(names);
+  chips.style.opacity=names.length?'1':'0';
+}
+updateSuggestions();
+
+// Deep link /<territory> renders straight to the dashboard, no animation.
+function fromURL(){
+  const raw=clean(location.pathname);
+  if(!raw){document.body.classList.remove('territory','animate');return;}
+  // Prefer the known list's canonical casing; fall back to the raw name so an
+  // unlisted-but-rendered territory still loads (enterTerritory 404s otherwise).
+  const match=TERRITORIES.find(x=>x.toLowerCase()===raw.toLowerCase())||raw;
+  enterTerritory(match,false);
+}
+window.addEventListener('popstate',fromURL);
+fromURL();
+</script>
+</body>
+</html>
