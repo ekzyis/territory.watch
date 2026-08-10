@@ -29,8 +29,8 @@ make build <territory>
 
 This will create two files:
 
-* static/data/<territory>-feed.ndjson: Territory feed as fetched from the SN API
-* static/data/<territory>-agg.json:    Aggregated data for the HTML view
+* static/data/\<territory\>-feed.ndjson: Territory feed as fetched from the SN API
+* static/data/\<territory\>-agg.json:    Aggregated data for the HTML view
 
 See Makefile for more details.
 
