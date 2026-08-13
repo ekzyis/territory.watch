@@ -20,13 +20,17 @@ tw: $(wildcard *.go cmd/*.go) go.mod go.sum
 # static/index.html if it isn't already there.
 build: tw
 	@test -n "$(TERRITORY)" || { echo "usage: make build <territory>" >&2; exit 1; }
-	
-	@t=$$(echo '$(TERRITORY)' | tr A-Z a-z); f=static/data/$$t-feed.ndjson; \
+
+	@t=$$(echo '$(TERRITORY)' | tr A-Z a-z); \
+	f=static/data/$$t-feed.ndjson; \
 	tmp=$$(mktemp /tmp/$$t-feed.XXXXXX); \
-	if [ -f $$f ]; then mv $$f $$tmp; fi; \
-	cat $$tmp 2>/dev/null | ./tw fetch $(TERRITORY) > $$f && \
-	./tw aggregate < $$f > static/data/$$t-agg.json
-	
+	if [ -f $$f ]; then \
+		mv $$f $$tmp; \
+	fi; \
+	echo "make build $$t"; \
+	cat $$tmp 2>/dev/null | (./tw fetch $(TERRITORY) >$$f) || exit 1; \
+	./tw aggregate <$$f >static/data/$$t-agg.json || exit 1;
+
 	@if grep -qi "\"$(TERRITORY)\"" static/index.html; then \
 		echo "~$(TERRITORY) already listed in static/index.html"; \
 	else \
