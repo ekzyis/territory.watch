@@ -88,6 +88,10 @@
     /* Portrait: 50vw is too small a disc, so the sun rises but stays behind the
        ridges. Widen it (vw of the narrow axis) so it clears the ridgeline. */
     #sun{width:min(92vw,520px)!important;height:min(92vw,520px)!important;margin-left:calc(min(92vw,520px) / -2)!important}
+    /* Revenue wraps to the next row on small screens. Align it to the right
+       in that case. For that, we only need to set width:100%. align-self:right
+       is already set. */
+    div:has(#rev-range){width:100%}
   }
 </style>
 </head>
