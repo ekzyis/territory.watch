@@ -83,6 +83,9 @@
      it sits just below the bar rather than sliding underneath it. !important is
      needed because #dash sets `margin`/`border-radius` inline (a shorthand
      outranks a normal rule). */
+  /* Stat cards: 2x2 by default, one row of 4 once there's room for them. */
+  #cards{grid-template-columns:repeat(2,1fr)}
+  @media (min-width:640px){#cards{grid-template-columns:repeat(4,1fr)}}
   @media (max-width:640px){
     #dash{margin:60px 0 0!important;border-radius:0!important}
     /* Portrait: 50vw is too small a disc, so the sun rises but stays behind the
@@ -183,7 +186,7 @@
       </div>
     </div>
 
-    <div id="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:38px"></div>
+    <div id="cards" style="display:grid;gap:12px;margin-bottom:38px"></div>
 
     <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px">
       <div id="trend-label" style="font-size:13px;color:#c9b79f;letter-spacing:.04em">TREND</div>
