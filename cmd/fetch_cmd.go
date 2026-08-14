@@ -16,7 +16,7 @@ import (
 )
 
 // pageSize is the fetch limit per API request (max: 1000)
-const pageSize = 1000
+const pageSize = 100
 
 // countWriter counts bytes written so the progress line can report feed size.
 type countWriter struct {
