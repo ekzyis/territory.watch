@@ -385,7 +385,7 @@ function wireHover(box,R,specs){
 }
 function cardsHTML(R,cfg){
   const T=R.totals,sub=cfg.label.toLowerCase();
-  const cards=[['Posts',comma(T.posts),sub,'#ece4d8'],['Comments',comma(T.comments),sub,'#ece4d8'],['Zaps',compact(T.zaps),'sats · '+sub,'#f7931a'],['Stackers',comma(META.stackers),'active','#ece4d8']];
+  const cards=[['Posts',comma(T.posts),sub,'#ece4d8'],['Comments',comma(T.comments),sub,'#ece4d8'],['Zaps',compact(T.zaps),'sats · '+sub,'#f7931a'],['Stackers',comma(T.stackers),'active · '+sub,'#ece4d8']];
   return cards.map(c=>'<div style="background:#14100b;border:1px solid rgba(247,147,26,.22);border-radius:9px;padding:16px 18px"><div style="color:#9a8f7f;font-size:11px;letter-spacing:.16em;text-transform:uppercase">'+c[0]+'</div><div style="font-size:24px;font-weight:800;margin-top:8px;color:'+c[3]+'">'+c[1]+'</div><div style="color:#7d7264;font-size:11px;margin-top:3px">'+c[2]+'</div></div>').join('');
 }
 function btnsHTML(){
@@ -419,7 +419,7 @@ function metaLine(){
   if(f&&u)lead='founded '+esc(f)+' by '+link;
   else if(f)lead='founded '+esc(f);
   else if(u)lead='by '+link;
-  const tail=comma(META.stackers)+' stackers';return lead?lead+' · '+tail:tail;
+  const tail=comma(DATA.forever.totals.stackers)+' stackers';return lead?lead+' · '+tail:tail;
 }
 const setText=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
 // Human "N days ago" from the fetchedAt string the renderer emits.

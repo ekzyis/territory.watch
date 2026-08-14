@@ -23,6 +23,7 @@ type totals struct {
 	Posts    int `json:"posts"`
 	Comments int `json:"comments"`
 	Zaps     int `json:"zaps"`
+	Stackers int `json:"stackers"`
 }
 
 type rangeData struct {
@@ -33,25 +34,25 @@ type rangeData struct {
 }
 
 type meta struct {
-	Name     string `json:"name"`
-	Founder  string `json:"founder"`
-	Founded  string `json:"founded"`  // e.g. "Jul 2022"; "" if unknown
-	Stackers int    `json:"stackers"` // distinct authors seen (a proxy)
+	Name    string `json:"name"`
+	Founder string `json:"founder"`
+	Founded string `json:"founded"`
 }
 
 // aggItem is an item reduced to just what the charts need.
 type aggItem struct {
 	t       time.Time
-	revenue int // crosspost-adjusted founder revenue, whole sats
-	sats    int // total sats zapped (not crosspost-adjusted)
-	isPost  bool
+	revenue int    // crosspost-adjusted founder revenue, whole sats
+	sats    int    // total sats zapped (not crosspost-adjusted)
+	author  string // stacker name, for distinct-stacker counts
+	isPost  bool   // post or comment?
 }
 
 // rangeIDs is the order the range buttons appear in on the page.
 var rangeIDs = []string{"day", "month", "ytd", "year", "forever"}
 
 // aggregate reduces raw items to the per-range series the page renders, plus
-// territory metadata (name, founder, founded, stackers).
+// territory metadata (name, founder, founded).
 func aggregate(items []feedItem, hdr feedHeaderLine, now time.Time) (map[string]rangeData, meta) {
 	prepared, m := prepare(items, hdr)
 	data := make(map[string]rangeData, len(rangeIDs))
@@ -62,11 +63,10 @@ func aggregate(items []feedItem, hdr feedHeaderLine, now time.Time) (map[string]
 }
 
 // prepare dedupes, drops deleted items, and splits founder revenue across
-// crossposts. Name/founder/founded come from the feed header; stackers is the
-// count of distinct authors seen. Founded is formatted "Jan 2006".
+// crossposts. Name/founder/founded come from the feed header. Founded is
+// formatted "Jan 2006".
 func prepare(items []feedItem, hdr feedHeaderLine) ([]aggItem, meta) {
 	seen := map[int]bool{}
-	authors := map[string]bool{}
 	var out []aggItem
 	m := meta{Name: hdr.Territory, Founder: hdr.Founder, Founded: hdr.Founded.Format("Jan 2006")}
 
@@ -90,16 +90,10 @@ func prepare(items []feedItem, hdr feedHeaderLine) ([]aggItem, meta) {
 			t:       it.CreatedAt.UTC(),
 			revenue: revenue,
 			sats:    it.Sats,
+			author:  it.User.Name,
 			isPost:  it.ParentId == 0,
 		})
-
-		// distinct authors → stackers
-		if it.User.Name != "" {
-			authors[it.User.Name] = true
-		}
 	}
-
-	m.Stackers = len(authors)
 	return out, m
 }
 
@@ -187,6 +181,9 @@ func buildRange(id string, items []aggItem, now time.Time) rangeData {
 	for i := 0; i < n; i++ {
 		rd.Labels[i] = labelOf(i)
 	}
+	// Stackers can't be summed like the other stats: it's the distinct authors
+	// who posted anywhere in the range, so count them with a set.
+	stackers := map[string]bool{}
 	for _, it := range items {
 		i := idxOf(it.t)
 		if i < 0 {
@@ -199,7 +196,11 @@ func buildRange(id string, items []aggItem, now time.Time) rangeData {
 		} else {
 			rd.Series.Comments[i]++
 		}
+		if it.author != "" {
+			stackers[it.author] = true
+		}
 	}
+	rd.Totals.Stackers = len(stackers)
 	for i := 0; i < n; i++ {
 		rd.Totals.Revenue += rd.Series.Revenue[i]
 		rd.Totals.Posts += rd.Series.Posts[i]
