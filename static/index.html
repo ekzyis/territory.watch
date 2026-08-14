@@ -309,8 +309,9 @@ applySky(makeSky());
 // ---- dashboard rendering (data-driven from the fetched territory JSON) ------
 let DATA={},META={},RANGE='year',tbody=null;
 const RANGES=[
-  {id:'day',label:'Day',lab:'Hour'},{id:'week',label:'Week',lab:'Day'},{id:'month',label:'Month',lab:'Day'},
-  {id:'ytd',label:'YTD',lab:'Week'},{id:'year',label:'Year',lab:'Week'},{id:'forever',label:'All',lab:'Month'}
+  {id:'day',label:'1D',lab:'Hour'},{id:'month',label:'30D',lab:'Day'},
+  {id:'ytd',label:'YTD',lab:'Week'},{id:'year',label:'1Y',lab:'Week'},
+  {id:'forever',label:'∞',lab:'Month'}
 ];
 // Series drawn on each chart: [seriesKey, label, color, dash] ('0' = solid).
 // Revenue and zaps are each their own sats chart; posts and comments are counts

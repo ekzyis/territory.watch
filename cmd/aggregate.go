@@ -48,7 +48,7 @@ type aggItem struct {
 }
 
 // rangeIDs is the order the range buttons appear in on the page.
-var rangeIDs = []string{"day", "week", "month", "ytd", "year", "forever"}
+var rangeIDs = []string{"day", "month", "ytd", "year", "forever"}
 
 // aggregate reduces raw items to the per-range series the page renders, plus
 // territory metadata (name, founder, founded, stackers).
@@ -129,12 +129,8 @@ func buildRange(id string, items []aggItem, now time.Time) rangeData {
 			return anchor.Add(time.Duration(-(n - 1 - i)) * time.Hour).Format("3 PM")
 		}
 
-	case "week", "month": // daily buckets
-		if id == "week" {
-			n = 7
-		} else {
-			n = 30
-		}
+	case "month": // daily buckets
+		n = 30
 		anchor := truncDay(now)
 		idxOf = func(t time.Time) int {
 			d := int(anchor.Sub(truncDay(t)).Hours() / 24)
@@ -142,9 +138,6 @@ func buildRange(id string, items []aggItem, now time.Time) rangeData {
 		}
 		labelOf = func(i int) string {
 			bt := anchor.AddDate(0, 0, -(n - 1 - i))
-			if id == "week" {
-				return [...]string{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}[int(bt.Weekday())]
-			}
 			return bt.Format("Jan 2")
 		}
 
@@ -177,10 +170,7 @@ func buildRange(id string, items []aggItem, now time.Time) rangeData {
 				minM = mi
 			}
 		}
-		n = am - minM + 1
-		if n < 1 {
-			n = 1
-		}
+		n = max(1, am-minM+1)
 		idxOf = func(t time.Time) int {
 			return within(n-1-(am-monthIndex(t)), n)
 		}
