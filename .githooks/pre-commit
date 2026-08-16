@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -xeu
+
+tar zvcf data.tar.gz static/
+git add data.tar.gz
+
