@@ -146,17 +146,15 @@ func streamFeed(out io.Writer, in io.Reader, territory string) error {
 	// Live \r-updating progress only on a terminal; elsewhere (pipe/redirect, or
 	// parallel builds sharing one terminal) print a single final line instead.
 	interactive := false
+	cr := ""
 	if fi, err := os.Stderr.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
 		interactive = true
+		cr = "\r\x1b[K" // return to column 0 and clear the line
 	}
 	draw := func() {
 		mu.Lock()
 		n := items
 		mu.Unlock()
-		cr := ""
-		if interactive {
-			cr = "\r\x1b[K" // return to column 0 and clear the line
-		}
 		fmt.Fprintf(os.Stderr, "%s~%s items=%d size=%s elapsed=%.1fs",
 			cr, territory, n, humanBytes(int(cw.n.Load())), time.Since(start).Seconds())
 	}
@@ -200,7 +198,9 @@ func streamFeed(out io.Writer, in io.Reader, territory string) error {
 			Limit:  pageSize,
 		})
 		if err != nil {
-			return fmt.Errorf("fetching items for ~%s: %w", territory, err)
+			fmt.Fprintf(os.Stderr, "%sfetching items for ~%s: %s\n", cr, territory, err)
+			time.Sleep(3*time.Second)
+			continue
 		}
 
 		var pageNew []sn.Item
