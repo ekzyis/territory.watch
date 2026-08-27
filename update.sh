@@ -6,6 +6,13 @@
 # TODO: For now, I run this manually with sudo, but ideally, this should run as the nginx user and a
 # systemd service + timer.
 
+BRANCH=$(git branch --show-current)
+if [ $BRANCH != "updates" ]; then
+  echo "expected branch 'updates', got '$BRANCH'"
+  echo "aborting"
+  exit 128
+fi
+
 set -xeuo pipefail
 
 start="$(date +%s)"
