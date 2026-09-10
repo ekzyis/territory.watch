@@ -39,7 +39,7 @@ took=$((end-start))
 git commit -n --allow-empty \
   -m $'systemd: automated update\n\n' \
   -m "took $took seconds"
-git push
+GIT_SSH_COMMAND="ssh -i /home/ekzyis/.ssh/id_ed25519" git push
 
 # deploy new data
 #
